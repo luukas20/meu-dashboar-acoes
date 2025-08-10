@@ -291,7 +291,7 @@ if st.sidebar.button("Buscar Dados"):
                     # Atualiza o layout do gráfico
                     fig_previsao.update_layout(
                         title="Previsão de Preço a partir de ARMA(9,10)-GARCH(2,1)",
-                        xaxis_title="Passos à frente",
+                        xaxis_title="Data",
                         yaxis_title="Preço"
                     )
 

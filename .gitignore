@@ -1,0 +1,15 @@
+# Ambientes Virtuais
+.venv/
+venv/
+env/
+
+# Arquivos de cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Arquivos de editores e SO
+.vscode/
+.idea/
+.DS_Store

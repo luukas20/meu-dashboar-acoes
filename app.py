@@ -147,20 +147,30 @@ def modelo_garch(bd):
     # Ajustar o comprimento: às vezes o modelo ARMA gera fitteds um pouco menores
     min_len = min(len(returns), len(arma_fitted), len(garch_fitted_volatility))
 
-    base_resultados = pd.DataFrame({
-        # "Retoro_medio":arma_fitted,
-        # "Volatilidade_GARCH": garch_fitted_volatility,
-        # "teste": garch_fitted_volatility*random_shocks,
-        # "random_shocks": random_shocks
-        "Close_Real": bd['Close'][-min_len:],           # Real
-        "Close_Previsto": fitted_prices[-min_len:],  # Previsto
-        "Retorno_Real": returns[-min_len:],            # Real
-        "Retorno_Previsto": adjusted_returns_fitted[-min_len:],            # Real
-        "Fitted_ARMA": arma_fitted[-min_len:],          # Tendência prevista
-        "Volatilidade_GARCH": garch_fitted_volatility[-min_len:]  # Risco previsto
-    })
+    base_resultados = pd.DataFrame({'Date': bd.index,
+                        'Close': bd['Close'],
+                        'Open': bd['Open'],
+                        'High': bd['High'],
+                        'Low': bd['Low'],
+                        'Fitted':  np.array(fitted_prices),
+                        'Predict':  np.full(len(bd.index), np.nan)})
 
-    return base_resultados
+    dates = pd.to_datetime(bd.index)
+    predict_dates = pd.date_range(list(dates)[-1]+pd.DateOffset(1), periods=10,freq='b').tolist()
+
+    df_predict = pd.DataFrame({'Date': np.array(predict_dates),
+                            'Close': np.full(len(predicted_prices), np.nan),
+                            'Open':  np.full(len(predicted_prices), np.nan),
+                            'High':  np.full(len(predicted_prices), np.nan),
+                            'Low':  np.full(len(predicted_prices), np.nan),
+                            'Fitted':  np.full(len(predicted_prices), np.nan),
+                            'Predict': np.array(predicted_prices)})
+
+    bd_final = pd.concat([base_resultados, df_predict], axis=0)
+
+    bd_final['Date'] = pd.to_datetime(bd_final['Date'], format='%Y-%m-%d')
+
+    return bd_final
 
 
 
@@ -215,6 +225,9 @@ if st.sidebar.button("Buscar Dados"):
             try:
                 data = carregar_dados(ticker_symbol, start_date, end_date)
                 base_resultados = modelo_garch(data)
+                base_resultados.sort_values(by='Date', ascending=False, inplace=True)
+
+                base_filtrada = base_resultados.head(360)
 
                 # Validação dos dados
                 if data.empty:
@@ -226,7 +239,7 @@ if st.sidebar.button("Buscar Dados"):
                     st.header(f"Dados Históricos para {ticker_symbol}", divider='rainbow')
 
                     # Exibe o dataframe com os dados brutos
-                    st.dataframe(data, use_container_width=True)
+                    st.dataframe(data.sort_index(ascending=False), use_container_width=True)
 
                     # --- Visualização com Gráficos (Plotly) ---
                     st.subheader("Gráfico de Preço de Fechamento")
@@ -251,19 +264,28 @@ if st.sidebar.button("Buscar Dados"):
 
                     # Adiciona o traço para o 'Close_Real'
                     fig_previsao.add_trace(go.Scatter(
-                        x=base_resultados.index,
-                        y=base_resultados['Close_Real'],
+                        x=base_filtrada['Date'],
+                        y=base_filtrada['Close'],
                         mode='lines',
                         name='Preço Real'
                     ))
 
                     # Adiciona o traço para o 'Close_Previsto'
                     fig_previsao.add_trace(go.Scatter(
-                        x=base_resultados.index,
-                        y=base_resultados['Close_Previsto'],
+                        x=base_filtrada['Date'],
+                        y=base_filtrada['Fitted'],
+                        mode='lines',
+                        name='Preço Estimado',
+                        line= dict(color='orange', dash='dot') # Linha pontilhada para diferenciar a previsão
+                    ))
+
+                    # Adiciona o traço para o 'Close_Futuros'
+                    fig_previsao.add_trace(go.Scatter(
+                        x=base_filtrada['Date'],
+                        y=base_filtrada['Predict'],
                         mode='lines',
                         name='Preço Previsto',
-                        line= dict(color='orange', dash='dot') # Linha pontilhada para diferenciar a previsão
+                        line= dict(color='green', dash='dot') # Linha pontilhada para diferenciar a previsão
                     ))
 
                     # Atualiza o layout do gráfico

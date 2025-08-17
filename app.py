@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from datetime import date, timedelta
 from arch.univariate import ConstantMean, GARCH, Normal, arch_model
 from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_absolute_percentage_error
 
 @st.cache_data
 def carregar_dados(ticker, data_inicio, data_fim):
@@ -226,7 +227,8 @@ if st.sidebar.button("Buscar Dados"):
                 data = carregar_dados(ticker_symbol, start_date, end_date)
                 base_resultados = modelo_garch(data)
                 base_resultados.sort_values(by='Date', ascending=False, inplace=True)
-
+                df_limpo = base_resultados[['Date','Close', 'Fitted']].dropna()
+                mape = mean_absolute_percentage_error(df_limpo['Close'], df_limpo['Fitted']) if not df_limpo.empty else 0
                 base_filtrada = base_resultados.head(360)
 
                 # Validação dos dados
@@ -243,25 +245,33 @@ if st.sidebar.button("Buscar Dados"):
 
                     # --- Visualização com Gráficos (Plotly) ---
                     st.subheader("Gráfico de Preço de Fechamento", divider='rainbow')
-                    # Cria o gráfico de linha com o Plotly Express
-                    fig_close = px.line(
-                        data,
-                        x=data.index,
-                        y='Close',
-                        title=f'Preço de Fechamento de {ticker_symbol}',
-                        labels={'Close': 'Preço de Fechamento (R$)', 'Date': 'Data'}
-                    )
-                    # --- LINHA ADICIONADA PARA CUSTOMIZAR O TOOLTIP ---
-                    fig_close.update_traces(hovertemplate='<b>Data:</b> %{x|%d/%m/%Y}<br><b>Preço:</b> R$ %{y:,.2f}<extra></extra>')
+
+                    # Cria uma figura vazia do Plotly
+                    fig_close = go.Figure()
+
+                    # Adiciona o traço para o 'Close_Real' com seu próprio hovertemplate
+                    fig_close.add_trace(go.Scatter(
+                        x=base_resultados['Date'],
+                        y=base_resultados['Close'],
+                        mode='lines',
+                        name='Preço Real',
+                        # Define o formato APENAS para o valor Y desta linha
+                        hovertemplate='R$ %{y:,.2f}<extra></extra>'
+                    ))
 
                     # Atualiza o layout do gráfico (títulos dos eixos)
-                    fig_close.update_layout(xaxis_title='Data', yaxis_title='Preço (R$)')
+                    fig_close.update_layout(
+                        xaxis_title='Data', 
+                        yaxis_title='Preço (R$)',
+                        hovermode='x unified', # Unifica o tooltip para o eixo X
+                        xaxis_hoverformat='%d/%m/%Y' # Formata a data no topo do tooltip unificado
+                    )
 
                     # Exibe o gráfico no Streamlit
                     st.plotly_chart(fig_close, use_container_width=True)
 
 
-                    st.subheader("Gráfico de Previsão vs. Real", divider='rainbow')
+                    st.subheader(f"Gráfico de Previsão vs. Real - Accuracy {(1-mape):.2%}", divider='rainbow')
                     # A lógica para criar 'base_resultados' deve vir ANTES deste trecho.
 
                     # Cria uma figura vazia do Plotly

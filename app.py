@@ -242,7 +242,7 @@ if st.sidebar.button("Buscar Dados"):
                     st.dataframe(data.sort_index(ascending=False), use_container_width=True)
 
                     # --- Visualização com Gráficos (Plotly) ---
-                    st.subheader("Gráfico de Preço de Fechamento")
+                    st.subheader("Gráfico de Preço de Fechamento", divider='rainbow')
                     # Cria o gráfico de linha com o Plotly Express
                     fig_close = px.line(
                         data,
@@ -251,48 +251,63 @@ if st.sidebar.button("Buscar Dados"):
                         title=f'Preço de Fechamento de {ticker_symbol}',
                         labels={'Close': 'Preço de Fechamento (R$)', 'Date': 'Data'}
                     )
+                    # --- LINHA ADICIONADA PARA CUSTOMIZAR O TOOLTIP ---
+                    fig_close.update_traces(hovertemplate='<b>Data:</b> %{x|%d/%m/%Y}<br><b>Preço:</b> R$ %{y:,.2f}<extra></extra>')
+
+                    # Atualiza o layout do gráfico (títulos dos eixos)
                     fig_close.update_layout(xaxis_title='Data', yaxis_title='Preço (R$)')
+
+                    # Exibe o gráfico no Streamlit
                     st.plotly_chart(fig_close, use_container_width=True)
 
 
                     st.subheader("Gráfico de Previsão vs. Real", divider='rainbow')
-                    # ⚠️ Importante: Garanta que o DataFrame 'base_resultados' exista neste ponto do código.
                     # A lógica para criar 'base_resultados' deve vir ANTES deste trecho.
 
                     # Cria uma figura vazia do Plotly
                     fig_previsao = go.Figure()
 
-                    # Adiciona o traço para o 'Close_Real'
+                    # Adiciona o traço para o 'Close_Real' com seu próprio hovertemplate
                     fig_previsao.add_trace(go.Scatter(
                         x=base_filtrada['Date'],
                         y=base_filtrada['Close'],
                         mode='lines',
-                        name='Preço Real'
+                        name='Preço Real',
+                        # Define o formato APENAS para o valor Y desta linha
+                        hovertemplate='R$ %{y:,.2f}<extra></extra>'
                     ))
 
-                    # Adiciona o traço para o 'Close_Previsto'
+                    # Adiciona o traço para o 'Preço Estimado' com seu próprio hovertemplate
                     fig_previsao.add_trace(go.Scatter(
                         x=base_filtrada['Date'],
                         y=base_filtrada['Fitted'],
                         mode='lines',
                         name='Preço Estimado',
-                        line= dict(color='orange', dash='dot') # Linha pontilhada para diferenciar a previsão
+                        line=dict(color='orange', dash='dot'),
+                        # Define o formato APENAS para o valor Y desta linha
+                        hovertemplate='R$ %{y:,.2f}<extra></extra>'
                     ))
 
-                    # Adiciona o traço para o 'Close_Futuros'
+                    # Adiciona o traço para o 'Preço Previsto' com seu próprio hovertemplate
                     fig_previsao.add_trace(go.Scatter(
                         x=base_filtrada['Date'],
                         y=base_filtrada['Predict'],
                         mode='lines',
                         name='Preço Previsto',
-                        line= dict(color='green', dash='dot') # Linha pontilhada para diferenciar a previsão
+                        line=dict(color='green', dash='dot'),
+                        # Define o formato APENAS para o valor Y desta linha
+                        hovertemplate='R$ %{y:,.2f}<extra></extra>'
                     ))
 
-                    # Atualiza o layout do gráfico
+
+                    # Atualiza o layout do gráfico com as novas configurações de hover
                     fig_previsao.update_layout(
                         title="Previsão de Preço a partir de ARMA(9,10)-GARCH(2,1)",
                         xaxis_title="Data",
-                        yaxis_title="Preço"
+                        yaxis_title="Preço",
+                        # --- MUDANÇAS PRINCIPAIS AQUI ---
+                        hovermode='x unified', # Unifica o tooltip para o eixo X
+                        xaxis_hoverformat='%d/%m/%Y' # Formata a data no topo do tooltip unificado
                     )
 
                     # Renderiza o gráfico de previsão no Streamlit

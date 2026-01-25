@@ -466,6 +466,38 @@ if st.sidebar.button("Buscar Dados"):
             st.error(f"Nenhum dado encontrado para o ticker '{ticker_symbol}'. Verifique o código da ação (ex: PETR4.SA, MGLU3.SA, AAPL).")
         else:
             st.success(f"Dados de {ticker_symbol} carregados com sucesso!")
+            # --- Exibição dos Dados ---
+            st.header(f"Dados Históricos para {ticker_symbol}", divider='rainbow')
+
+            # Exibe o dataframe com os dados brutos
+            st.dataframe(data.sort_index(ascending=False), use_container_width=True)
+
+            # --- Visualização com Gráficos (Plotly) ---
+            st.subheader("Gráfico de Preço de Fechamento", divider='rainbow')
+
+            # Cria uma figura vazia do Plotly
+            fig_close = go.Figure()
+
+            # Adiciona o traço para o 'Close_Real' com seu próprio hovertemplate
+            fig_close.add_trace(go.Scatter(
+                x=data.index,
+                y=data['Close'],
+                mode='lines',
+                name='Preço Real',
+                # Define o formato APENAS para o valor Y desta linha
+                hovertemplate='R$ %{y:,.2f}<extra></extra>'
+            ))
+
+            # Atualiza o layout do gráfico (títulos dos eixos)
+            fig_close.update_layout(
+                xaxis_title='Data', 
+                yaxis_title='Preço (R$)',
+                hovermode='x unified', # Unifica o tooltip para o eixo X
+                xaxis_hoverformat='%d/%m/%Y' # Formata a data no topo do tooltip unificado
+            )
+
+            # Exibe o gráfico no Streamlit
+            st.plotly_chart(fig_close, use_container_width=True)
 
             with st.spinner(f"Treinando modelo GARCH..."):
                 try:
@@ -479,40 +511,6 @@ if st.sidebar.button("Buscar Dados"):
                     split_date = base_garch.index[-test_size] # A data onde começa o teste
                     base_treino_garch = base_filtrada_garch.loc[:split_date].iloc[:-1]
                     base_teste_garch = base_filtrada_garch.loc[split_date:]
-
-                    # --- Exibição dos Dados ---
-                    st.header(f"Dados Históricos para {ticker_symbol}", divider='rainbow')
-
-                    # Exibe o dataframe com os dados brutos
-                    st.dataframe(data.sort_index(ascending=False), use_container_width=True)
-
-                    # --- Visualização com Gráficos (Plotly) ---
-                    st.subheader("Gráfico de Preço de Fechamento", divider='rainbow')
-
-                    # Cria uma figura vazia do Plotly
-                    fig_close = go.Figure()
-
-                    # Adiciona o traço para o 'Close_Real' com seu próprio hovertemplate
-                    fig_close.add_trace(go.Scatter(
-                        x=base_garch['Date'],
-                        y=base_garch['Close'],
-                        mode='lines',
-                        name='Preço Real',
-                        # Define o formato APENAS para o valor Y desta linha
-                        hovertemplate='R$ %{y:,.2f}<extra></extra>'
-                    ))
-
-                    # Atualiza o layout do gráfico (títulos dos eixos)
-                    fig_close.update_layout(
-                        xaxis_title='Data', 
-                        yaxis_title='Preço (R$)',
-                        hovermode='x unified', # Unifica o tooltip para o eixo X
-                        xaxis_hoverformat='%d/%m/%Y' # Formata a data no topo do tooltip unificado
-                    )
-
-                    # Exibe o gráfico no Streamlit
-                    st.plotly_chart(fig_close, use_container_width=True)
-
 
                     st.subheader(f"Gráfico de Previsão vs. Real - GARCH - Accuracy {(1-mape_garch):.2%}", divider='rainbow')
                     # A lógica para criar 'base_resultados' deve vir ANTES deste trecho.

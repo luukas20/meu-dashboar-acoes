@@ -33,16 +33,8 @@ def carregar_dados(ticker, data_inicio, data_fim):
     # 2. Busca o histórico diário principal
     data = require.history(start=data_inicio, end=data_fim)
 
-    # Se não houver dados históricos, não há o que fazer.
-    if data.empty:
-        return data
-
     # 3. Busca dados intraday bem recentes (últimos 2 dias, intervalo de 1 minuto)
     bd = require.history(period="2d", interval='1m')
-    
-    # Se não houver dados intraday, apenas retorne o histórico principal
-    if bd.empty:
-        return data
 
     # 4. Compara as datas e concatena se necessário
     # Checa se o último dia do histórico é diferente do último dia do intraday

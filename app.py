@@ -29,6 +29,7 @@ def carregar_dados(ticker, data_inicio, data_fim):
     """
     # 1. Cria o objeto Ticker para o ativo desejado
     require = yf.Ticker(ticker)
+    name_ticker = require.info.get('longName', 'Unknown')
 
     # 2. Busca o histórico diário principal
     data = require.history(start=data_inicio, end=data_fim)
@@ -43,7 +44,7 @@ def carregar_dados(ticker, data_inicio, data_fim):
         # Usamos pd.concat para garantir que os dataframes sejam unidos corretamente
         data = pd.concat([data, bd.tail(1)])
         
-    return data
+    return data, name_ticker
 
 def modelo_garch(bd):
     # --- 1. Gerar dados simulados (ou você pode carregar seus dados reais) ---
@@ -451,7 +452,7 @@ if st.sidebar.button("Buscar Dados"):
     else:
         # Adiciona um placeholder de carregamento
         with st.spinner(f"Buscando dados para {ticker_symbol}..."):
-            data = carregar_dados(ticker_symbol, start_date, end_date)
+            data, name_ticker = carregar_dados(ticker_symbol, start_date, end_date)
             
         # Validação dos dados
         if data.empty:
@@ -459,7 +460,7 @@ if st.sidebar.button("Buscar Dados"):
         else:
             st.success(f"Dados de {ticker_symbol} carregados com sucesso!")
             # --- Exibição dos Dados ---
-            st.header(f"Dados Históricos para {ticker_symbol}", divider='rainbow')
+            st.header(f"Dados Históricos para {name_ticker}", divider='rainbow')
 
             # Exibe o dataframe com os dados brutos
             st.dataframe(data.sort_index(ascending=False), use_container_width=True)

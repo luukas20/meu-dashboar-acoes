@@ -290,7 +290,7 @@ def modelo_lstm(bd):
     # 2. Defina o callback com o argumento restore_best_weights=True
     early_stopping_callback = EarlyStopping(
         monitor='val_loss',       # O que ele está vigiando
-        patience=50,              # Quantas épocas esperar
+        patience=25,              # Quantas épocas esperar
         restore_best_weights=True # <--- O SEGREDO ESTÁ AQUI
     )
 

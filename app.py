@@ -5,9 +5,10 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import time
+from datetime import date, timedelta
+from bizdays import Calendar
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import date, timedelta
 from arch.univariate import ConstantMean, GARCH, Normal, arch_model
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.preprocessing import StandardScaler, FunctionTransformer
@@ -157,7 +158,15 @@ def modelo_garch(bd):
     garch_model_full = garch_model_full.fix(params_garch)
 
     dates = pd.to_datetime(bd.index)
-    forecast_dates = pd.date_range(list(dates)[-1]+pd.DateOffset(1), periods=future_horizon,freq='b').tolist()
+    last_date = list(dates)[-1]
+    # Configuração única
+    cal = Calendar.load("B3")
+    # Gera os próximos 10 dias úteis da B3
+    forecast_dates = pd.to_datetime(cal.offset(last_date, range(1, future_horizon+1)))
+    
+    original_tz = bd.index.tz
+    if original_tz is not None:
+        forecast_dates = forecast_dates.tz_localize(original_tz)
 
     # Acesso às previsões
     arma_pred_obj_full = arma_model_full.forecast(steps=future_horizon)
@@ -369,7 +378,18 @@ def modelo_lstm(bd):
     # --- Montar o DataFrame organizado ---
 
     dates = pd.to_datetime(bd.index)
-    forecast_dates = pd.date_range(list(dates)[-1]+pd.DateOffset(1), periods=n_future,freq='b').tolist()
+    last_date = list(dates)[-1]
+    # Configuração única
+    cal = Calendar.load("B3")
+    # Gera os próximos 10 dias úteis da B3
+    forecast_dates = pd.to_datetime(cal.offset(last_date, range(1, n_future+1)))
+    
+    original_tz = bd.index.tz
+    if original_tz is not None:
+        forecast_dates = forecast_dates.tz_localize(original_tz)
+
+    
+    split_date = bd.index[-test_size] # A data onde começa o teste
 
     base_resultados = pd.DataFrame({'Date': bd.loc[:split_date].index,
                         'Close': bd['Close'].loc[:split_date],

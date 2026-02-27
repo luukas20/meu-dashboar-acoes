@@ -30,7 +30,7 @@ def carregar_dados(ticker, data_inicio, data_fim):
     Busca dados históricos e adiciona a última cotação intraday, se for de um novo dia.
     """
     # 1. Cria o objeto Ticker para o ativo desejado
-    session = requests.Session(impersonate='chorme')
+    session = requests.Session(impersonate='chrome')
     require = yf.Ticker(ticker,session=session)
     name_ticker = require.info.get('longName', 'Unknown')
 

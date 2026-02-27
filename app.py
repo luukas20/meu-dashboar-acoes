@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from curl_cffi import requests
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -29,7 +30,8 @@ def carregar_dados(ticker, data_inicio, data_fim):
     Busca dados históricos e adiciona a última cotação intraday, se for de um novo dia.
     """
     # 1. Cria o objeto Ticker para o ativo desejado
-    require = yf.Ticker(ticker)
+    session = requests.Session(impresonate='chorme')
+    require = yf.Ticker(ticker,session=session)
     name_ticker = require.info.get('longName', 'Unknown')
 
     # 2. Busca o histórico diário principal

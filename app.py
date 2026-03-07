@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 from curl_cffi import requests
 import streamlit as st
-import yfinance as yf
+# import yfinance as yf
+import yahooquery as yq
 import pandas as pd
 import numpy as np
 import time
@@ -30,15 +31,25 @@ def carregar_dados(ticker, data_inicio, data_fim):
     Busca dados históricos e adiciona a última cotação intraday, se for de um novo dia.
     """
     # 1. Cria o objeto Ticker para o ativo desejado
-    session = requests.Session(impersonate='chrome')
-    require = yf.Ticker(ticker,session=session)
-    name_ticker = require.info.get('longName', 'Unknown')
+    require = yq.Ticker(ticker)
+    # name_ticker = require.info.get('longName', 'Unknown')
+    
+    info = require.price
+    name_ticker = info[ticker.upper()]["shortName"] #if ticker.upper() in info else 'Unknown'
+    # print(info["PETR4.SA"]["shortName"])
 
     # 2. Busca o histórico diário principal
     data = require.history(start=data_inicio, end=data_fim)
+    data = data.droplevel("symbol")
+    
+    data.index = pd.to_datetime(data.index)
+    data.index = data.index.tz_localize(None)
 
     # 3. Busca dados intraday bem recentes (últimos 2 dias, intervalo de 1 minuto)
     bd = require.history(period="2d", interval='1m')
+    bd = bd.droplevel("symbol")
+    bd.index = pd.to_datetime(bd.index)
+    bd.index = bd.index.tz_localize(None)
 
     # 4. Compara as datas e concatena se necessário
     # Checa se o último dia do histórico é diferente do último dia do intraday
@@ -46,8 +57,34 @@ def carregar_dados(ticker, data_inicio, data_fim):
         # Se forem diferentes, anexa a última cotação intraday ao histórico
         # Usamos pd.concat para garantir que os dataframes sejam unidos corretamente
         data = pd.concat([data, bd.tail(1)])
+
+    data.columns = data.columns.str.capitalize()
         
     return data, name_ticker
+
+# def carregar_dados(ticker, data_inicio, data_fim):
+#     """
+#     Busca dados históricos e adiciona a última cotação intraday, se for de um novo dia.
+#     """
+#     # 1. Cria o objeto Ticker para o ativo desejado
+#     session = requests.Session(impersonate='chrome')
+#     require = yf.Ticker(ticker,session=session)
+#     name_ticker = require.info.get('longName', 'Unknown')
+
+#     # 2. Busca o histórico diário principal
+#     data = require.history(start=data_inicio, end=data_fim)
+
+#     # 3. Busca dados intraday bem recentes (últimos 2 dias, intervalo de 1 minuto)
+#     bd = require.history(period="2d", interval='1m')
+
+#     # 4. Compara as datas e concatena se necessário
+#     # Checa se o último dia do histórico é diferente do último dia do intraday
+#     if data.index[-1].date() != bd.index[-1].date():
+#         # Se forem diferentes, anexa a última cotação intraday ao histórico
+#         # Usamos pd.concat para garantir que os dataframes sejam unidos corretamente
+#         data = pd.concat([data, bd.tail(1)])
+        
+#     return data, name_ticker
 
 def modelo_garch(bd):
     # --- 1. Gerar dados simulados (ou você pode carregar seus dados reais) ---
@@ -450,7 +487,7 @@ ticker_symbol = st.sidebar.text_input(
 # Inputs para a data de início e fim
 # Define as datas padrão (últimos 365 dias)
 end_date_default = date.today()
-start_date_default = '2018-01-01'
+start_date_default = '2016-01-01'
 
 start_date = st.sidebar.date_input(
     "Data de Início",

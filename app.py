@@ -35,8 +35,10 @@ def carregar_dados(ticker, data_inicio, data_fim):
     # name_ticker = require.info.get('longName', 'Unknown')
     
     info = require.price
-    name_ticker = info[ticker.upper()]["shortName"] #if ticker.upper() in info else 'Unknown'
-    # print(info["PETR4.SA"]["shortName"])
+    if isinstance(info, dict) and ticker.upper() in info:
+        name_ticker = info[ticker.upper()].get("shortName", ticker.upper())
+    else:
+        name_ticker = ticker.upper()
 
     # 2. Busca o histórico diário principal
     data = require.history(start=data_inicio, end=data_fim)
